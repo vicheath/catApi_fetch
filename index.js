@@ -11,7 +11,7 @@ const progressBar = document.getElementById("progressBar");
 const getFavouritesBtn = document.getElementById("getFavouritesBtn");
 
 // Step 0: Store your API key here for reference and easy access.
-const API_KEY = "";
+const API_KEY = "live_hpBoVagURpijidxm9V6BXvLEBCE8FwS9xNknLQxajGIf2W8FpTjqf1wn8oWwXT3G";
 
 /**
  * 1. Create an async function "initialLoad" that does the following:
@@ -21,7 +21,31 @@ const API_KEY = "";
  *  - Each option should display text equal to the name of the breed.
  * This function should execute immediately.
  */
+async function initialLoad() {
+  try {
+    const response = await fetch("https://api.thecatapi.com/v1/breeds", {
+      headers: {
+        "x-api-key": API_KEY,
+      },
+    });
 
+    if (!response.ok) {
+      throw new Error(`Failed to fetch breeds. Status: ${response.status}`);
+    }
+    const breeds = await response.json();
+    breeds.forEach((breed) => {
+      const option = document.createElement("option");
+      option.value = breed.id;
+      option.textContent = breed.name;
+      breedSelect.appendChild(option);
+    });
+    fetchBreedInfo(breedSelect.value);
+  } catch (error) {
+    console.error("Error during initialLoad:", error);
+  }
+}
+
+initialLoad();
 /**
  * 2. Create an event handler for breedSelect that does the following:
  * - Retrieve information on the selected breed from the cat API using fetch().
@@ -36,6 +60,48 @@ const API_KEY = "";
  * - Each new selection should clear, re-populate, and restart the Carousel.
  * - Add a call to this function to the end of your initialLoad function above to create the initial carousel.
  */
+breedSelect.addEventListener("change", () => {
+  const selectedBreedId = breedSelect.value;
+  clearCarousel();
+  fetchBreedInfo(selectedBreedId);
+});
+function clearCarousel() {
+  infoDump.innerHTML = "";
+}
+async function fetchBreedInfo(breedId) {
+  try {
+    const response = await fetch(`https://api.thecatapi.com/v1/images/search?breed_id=${breedId}`, {
+      headers: {
+        "x-api-key": API_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch breed information. Status: ${response.status}`);
+    }
+
+    const breedInfo = await response.json();
+    breedInfo.forEach((info) => {
+      const carouselItem = document.createElement("div");
+      carouselItem.className = "carousel-item";
+
+      const img = document.createElement("img");
+      img.src = info.url;
+      img.alt = `Image of ${breedSelect.options[breedSelect.selectedIndex].text}`;
+
+      carouselItem.appendChild(img);
+      infoDump.appendChild(carouselItem);
+    });
+
+    const breedName = breedSelect.options[breedSelect.selectedIndex].text;
+    const infoSection = document.createElement("div");
+    infoSection.innerHTML = `<h2>${breedName}</h2>`;
+
+    infoDump.appendChild(infoSection);
+  } catch (error) {
+    console.error("Error during fetchBreedInfo:", error);
+  }
+}
 
 /**
  * 3. Fork your own sandbox, creating a new one named "JavaScript Axios Lab."
